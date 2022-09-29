@@ -32,7 +32,46 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
+}
+
+.Letter {
+  height: 80px;
+  width: 65px;
+  margin: 2px;
+}
+
+.Button,
+.Letter,
+.Box {
+  height: 80px;
+  width: 60px;
+  margin: 2px;
+}
+
+.Button {
+  height: 80px;
+  width: 90px;
+}
+
+.Row {
+  display: flex;
+  justify-content: center;
+}
+
+.Box {
+  width: 80px;
+  border-color: #282c34;
+  border-width: 1px;
+  background-color: transparent;
+  border-style: solid;
+  float: left
+}
+
+.Game {
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
