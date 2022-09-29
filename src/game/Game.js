@@ -15,26 +15,22 @@ function Game(props) {
             const nLetters = state.letters + letter
 
             const newState = { word: nWord, letters: nLetters }
-            console.log(newState)
             setState(newState)
 
         }
     }
 
     const remove = () => {
-        console.log("remv fun")
         if (state.word.length > 0) {
             const nWord = state.word.substring(0, state.word.length - 1)
             const nLetters = state.letters.substring(0, state.letters.length - 1)
 
             const newState = { word: nWord, letters: nLetters }
-            console.log(newState)
             setState(newState)
         }
     }
 
     const enter = () => {
-        console.log("enter fun")
         if (state.word.length === Length) {
             setState({ ...state, word: "" })
         }
