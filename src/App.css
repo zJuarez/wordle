@@ -47,14 +47,14 @@
 .Button,
 .Letter,
 .Box {
-  height: 80px;
-  width: 60px;
+  height: 60px;
+  width: 40px;
   margin: 2px;
 }
 
 .Button {
-  height: 80px;
-  width: 90px;
+  height: 60px;
+  width: 60px;
 }
 
 .Row {
@@ -63,15 +63,24 @@
 }
 
 .Box {
-  width: 80px;
+  width: 60px;
   border-color: #282c34;
   border-width: 1px;
   background-color: transparent;
   border-style: solid;
-  float: left
+  float: left;
+  text-align: center;
+  line-height: 60px;
+  height: 60px;
+  font-size: 24px;
+  font-weight: bold;
 }
 
 .Game {
   margin-top: 10px;
   margin-bottom: 10px;
+}
+
+.Keyboard {
+  margin-top: 30px;
 }
