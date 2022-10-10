@@ -4,6 +4,8 @@ import Keyboard from '../keyboard/Keyboard';
 import Modal from 'react-modal';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import WORDS_TA from '../words/wordle-Ta'
+import WORDS_LA from '../words/wordle-La'
 
 const customStyles = {
     content: {
@@ -21,15 +23,12 @@ function Game(props) {
     const Length = props.length
     const WordGoal = props.word
 
-    var checkWord = require('check-if-word')
-    var words = checkWord('en'); // setup the language for check, default is en
-
     const notEnoughLetters = () => toast("Not Enough Letters");
     const notInWordList = () => toast("Not In Word List");
 
     const [key, setKey] = useState({ c: 0, k: "" })
     const [modalIsOpen, setIsOpen] = useState(false);
-    const [state, setState] = useState({ word: "", letters: "", colors: "", used: Array(26).fill(false) })
+    const [state, setState] = useState({ word: "", letters: "", colors: "", used: Array(26).fill('f') })
     const [win, setIsWin] = useState(0) // 0 valid, 1 invalid
 
     function closeModal() {
@@ -76,7 +75,7 @@ function Game(props) {
             }
         }
         else if (state.word.length === Length) {
-            if (!words.check(state.word)) {
+            if (!WORDS_TA.includes(state.word) && !WORDS_LA.includes(state.word)) {
                 notInWordList()
             } else {
                 let NewColors = state.colors + ('t').repeat(Length)
@@ -87,12 +86,12 @@ function Game(props) {
                 for (let i = 0; i < Length; i++) {
                     abc[indx(state.word[i])]++
                     abcOg[indx(WordGoal[i])]++
-                    newUsed[indx(state.word[i])] = 1
                 }
 
                 for (let i = 0; i < Length; i++) {
                     if (state.word[i] === WordGoal[i]) {
                         NewColors = repl(NewColors, state.colors.length + i, 'v')
+                        newUsed[indx(state.word[i])] = 'v'
                         abcOg[indx(state.word[i])]--
                     }
                 }
@@ -102,11 +101,16 @@ function Game(props) {
                         continue;
                     } else if (!WordGoal.includes(state.word[i])) {
                         NewColors = repl(NewColors, state.colors.length + i, 'g')
+                        newUsed[indx(state.word[i])] = 'g'
                     } else {
-                        if (abcOg[indx(state.word[i])] > 0)
+                        if (abcOg[indx(state.word[i])] > 0) {
                             NewColors = repl(NewColors, state.colors.length + i, 'a')
-                        else
+                            newUsed[indx(state.word[i])] = 'a'
+                        }
+                        else {
                             NewColors = repl(NewColors, state.colors.length + i, 'g')
+                            newUsed[indx(state.word[i])] = 'g'
+                        }
                     }
                     abcOg[indx(state.word[i])]--
                 }

@@ -1,6 +1,8 @@
+import { getColor } from '../game/colors';
+
 function Letter(props) {
     return (
-        <button style={{ backgroundColor: props.used ? "gray" : "default" }} className="Letter" onClick={() => props.typeLetter(props.value)}>
+        <button style={{ backgroundColor: getColor(props.used) }} className="Letter" onClick={() => props.typeLetter(props.value)}>
             {props.value.toUpperCase()}
         </button>
     );
