@@ -1,13 +1,13 @@
 const getColor = (colorCode) => {
     let color = "transparent"
     if (colorCode === 'v') {
-        color = "green"
+        color = "#a9cbd9"
     } else if (colorCode === 'a') {
-        color = "yellow"
+        color = "#ffdd6e"
     } else if (colorCode === 'g') {
         color = "gray"
     } else if (colorCode === 'f') {
-        color = "lightgray"
+        color = "rgb(211,214,218)"
     }
     return color;
 }

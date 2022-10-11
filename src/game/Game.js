@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import Box from './Box';
 import Keyboard from '../keyboard/Keyboard';
 import Modal from 'react-modal';
@@ -6,6 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import WORDS_TA from '../words/wordle-Ta'
 import WORDS_LA from '../words/wordle-La'
+import useEventListener from '../keyboard/useEventListener';
 
 const customStyles = {
     content: {
@@ -14,22 +15,30 @@ const customStyles = {
         right: 'auto',
         bottom: 'auto',
         marginRight: '-50%',
+        width: "150px",
+        textAlign: "center",
         transform: 'translate(-50%, -50%)',
     },
 };
 
+const indx = (c) => c.charCodeAt(0) - 'a'.charCodeAt(0)
+const repl = (str, i, r) => {
+    return str.substring(0, i) +
+        r +
+        str.substring(i + 1);
+}
+
+const isLetter = str => str.length === 1 && str.match(/[a-z]/i);
+
+const notEnoughLetters = () => toast("Not Enough Letters");
+const notInWordList = () => toast("Not In Word List");
+
+const defaultState = { word: "", letters: "", colors: "", used: Array(26).fill('f'), win: 0 }
+
 function Game(props) {
-    const Trys = props.trys
-    const Length = props.length
-    const WordGoal = props.word
 
-    const notEnoughLetters = () => toast("Not Enough Letters");
-    const notInWordList = () => toast("Not In Word List");
-
-    const [key, setKey] = useState({ c: 0, k: "" })
-    const [modalIsOpen, setIsOpen] = useState(false);
-    const [state, setState] = useState({ word: "", letters: "", colors: "", used: Array(26).fill('f') })
-    const [win, setIsWin] = useState(0) // 0 valid, 1 invalid
+    const [modalIsOpen, setIsOpen] = useState(false)
+    const [state, setState] = useState(defaultState)
 
     function closeModal() {
         setIsOpen(false);
@@ -38,8 +47,19 @@ function Game(props) {
         setIsOpen(true)
     }
 
-    const typeLetter = (letter) => {
-        if (state.word.length < Length) {
+    const playAgain = useCallback(() => {
+        props.setWord(WORDS_LA[Math.floor(Math.random() * WORDS_LA.length)])
+        setState(defaultState)
+        setIsOpen(false)
+    }, [setState, setIsOpen, props.setWord]);
+
+    const typeLetter = useCallback((letter) => {
+        console.log("type letter called")
+        console.log(letter)
+        if (state.win > 0) {
+            return;
+        }
+        if (state.word.length < props.length) {
             const nWord = state.word + letter
             const nLetters = state.letters + letter
 
@@ -47,9 +67,12 @@ function Game(props) {
             setState(newState)
 
         }
-    }
+    }, [state.word, props.length, state.win]);
 
-    const remove = () => {
+    const remove = useCallback(() => {
+        if (state.win > 0) {
+            return;
+        }
         if (state.word.length > 0) {
             const nWord = state.word.substring(0, state.word.length - 1)
             const nLetters = state.letters.substring(0, state.letters.length - 1)
@@ -57,115 +80,120 @@ function Game(props) {
             const newState = { ...state, word: nWord, letters: nLetters }
             setState(newState)
         }
-    }
+    }, [state.word, state.win]);
 
-    const indx = (c) => c.charCodeAt(0) - 'a'.charCodeAt(0)
-    const repl = (str, i, r) => {
-        return str.substring(0, i) +
-            r +
-            str.substring(i + 1);
-    }
 
-    const enter = () => {
-        if (state.colors.length === Trys * Length) {
-            if (state.word === WordGoal) {
-                openModal()
-            } else {
-                openModal()
-            }
+    const enter = useCallback(() => {
+        let win = 0
+        if (state.win > 0) {
+            openModal()
         }
-        else if (state.word.length === Length) {
+        else if (state.word.length === props.length) {
             if (!WORDS_TA.includes(state.word) && !WORDS_LA.includes(state.word)) {
                 notInWordList()
             } else {
-                let NewColors = state.colors + ('t').repeat(Length)
+                let NewColors = state.colors + ('t').repeat(props.length)
                 let abc = Array(26).fill(0)
                 let abcOg = Array(26).fill(0)
                 let newUsed = [...state.used]
 
-                for (let i = 0; i < Length; i++) {
+                for (let i = 0; i < props.length; i++) {
                     abc[indx(state.word[i])]++
-                    abcOg[indx(WordGoal[i])]++
+                    abcOg[indx(props.word[i])]++
                 }
 
-                for (let i = 0; i < Length; i++) {
-                    if (state.word[i] === WordGoal[i]) {
+                for (let i = 0; i < props.length; i++) {
+                    if (state.word[i] === props.word[i]) {
                         NewColors = repl(NewColors, state.colors.length + i, 'v')
                         newUsed[indx(state.word[i])] = 'v'
                         abcOg[indx(state.word[i])]--
                     }
                 }
 
-                for (let i = 0; i < Length; i++) {
-                    if (state.word[i] === WordGoal[i]) {
+                for (let i = 0; i < props.length; i++) {
+                    if (state.word[i] === props.word[i]) {
                         continue;
-                    } else if (!WordGoal.includes(state.word[i])) {
+                    } else if (!props.word.includes(state.word[i])) {
                         NewColors = repl(NewColors, state.colors.length + i, 'g')
-                        newUsed[indx(state.word[i])] = 'g'
+                        if (newUsed[indx(state.word[i])] == 'f')
+                            newUsed[indx(state.word[i])] = 'g'
                     } else {
                         if (abcOg[indx(state.word[i])] > 0) {
                             NewColors = repl(NewColors, state.colors.length + i, 'a')
-                            newUsed[indx(state.word[i])] = 'a'
+                            if (newUsed[indx(state.word[i])] == 'g' || newUsed[indx(state.word[i])] == 'f')
+                                newUsed[indx(state.word[i])] = 'a'
                         }
                         else {
                             NewColors = repl(NewColors, state.colors.length + i, 'g')
-                            newUsed[indx(state.word[i])] = 'g'
+                            if (newUsed[indx(state.word[i])] == 'f')
+                                newUsed[indx(state.word[i])] = 'g'
                         }
                     }
                     abcOg[indx(state.word[i])]--
                 }
-                if (state.word === WordGoal) {
+                // last time
+                if (state.colors.length >= (props.trys - 1) * props.length) {
+                    if (state.word === props.word) {
+                        openModal()
+                        win = 2
+                    } else {
+                        win = 1
+                        openModal()
+                    }
+                } else if (state.word === props.word) {
                     openModal()
-                    setIsWin(true)
+                    win = 2
                 }
-                setState({ ...state, colors: NewColors, word: "", used: newUsed })
+                setState({ ...state, colors: NewColors, word: "", used: newUsed, win: win })
             }
         } else {
             notEnoughLetters()
         }
-    }
+    }, [state, props]);
 
-    const isLetter = str => str.length === 1 && str.match(/[a-z]/i);
-
-
-    useEffect(() => {
-        document.addEventListener('keydown', (event) => {
-            setKey({ k: event.key, c: key.c + 1 })
-        })
-
-    }, [])
-
-    useEffect(() => {
-        if (isLetter(key.k)) {
-            typeLetter(key.k)
-        } else if (key.k == 'Backspace') {
+    const listener = useCallback((event) => {
+        if (isLetter(event.key)) {
+            typeLetter(event.key)
+        } else if (event.key == 'Backspace') {
             remove()
-        } else if (key.k == 'Enter') {
+        } else if (event.key == 'Enter') {
             enter()
         }
+    }, [enter, typeLetter, remove]);
 
-    }, [key])
-
-    const ModalTitle = win ? "WIN!" : "LOSE"
+    useEventListener('keydown', listener)
 
     return (
-        <div className="Game" onKeyPress>
-            <ToastContainer />
-            {Array.from({ length: Trys }, (x, row) =>
+        <div className="Game">
+            <ToastContainer
+                position="top-center"
+                autoClose={1000}
+                hideProgressBar
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss={false}
+                draggable={false}
+                pauseOnHover
+                theme="dark"
+            />
+            {Array.from({ length: props.trys }, (x, row) =>
                 <div key={row} className="Row">
-                    {Array.from({ length: Length }, (x, col) =>
-                        <Box key={col} colorCode={row * (Length) + col < state.colors.length ? state.colors[row * (Length) + col] : "t"}
-                            value={row * (Length) + col < state.letters.length ? state.letters[row * (Length) + col] : " "} />)}
+                    {Array.from({ length: props.length }, (x, col) =>
+                        <Box key={col} colorCode={row * (props.length) + col < state.colors.length ? state.colors[row * (props.length) + col] : "t"}
+                            value={row * (props.length) + col < state.letters.length ? state.letters[row * (props.length) + col] : " "} />)}
                 </div>)}
             <Keyboard enter={enter} used={state.used} remove={remove} typeLetter={typeLetter}></Keyboard>
             <Modal
                 isOpen={modalIsOpen}
                 onRequestClose={closeModal}
                 style={customStyles}
-                contentLabel={WordGoal}
+                contentLabel={props.word}
             >
-                <h2> {ModalTitle}</h2>
-                <h4> {WordGoal}</h4>
+                <h2> {state.win === 2 ? "WIN!" : "LOSE"}</h2>
+                <p> Answer:</p>
+                <h4> {props.word.toUpperCase()}</h4>
+                <button onClick={playAgain}> Play again</button>
             </Modal>
         </div>
 
