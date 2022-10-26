@@ -8,11 +8,12 @@ function App() {
   const length = 5
 
   const [word, setWord] = useState(WORDS[Math.floor(Math.random() * WORDS.length)]);
+  const [wins, setWins] = useState(0);
 
   return (
     <div className="App">
       <h1> Wordle</h1>
-      <Game word={word} trys={trys} length={length} setWord={setWord}></Game>
+      <Game wins={wins} setWins={setWins} word={word} trys={trys} length={length} setWord={setWord}></Game>
     </div >
   );
 }

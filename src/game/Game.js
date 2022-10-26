@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Box from './Box';
 import Keyboard from '../keyboard/Keyboard';
 import Modal from 'react-modal';
@@ -7,6 +7,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import WORDS_TA from '../words/wordle-Ta'
 import WORDS_LA from '../words/wordle-La'
 import useEventListener from '../keyboard/useEventListener';
+import Confetti from 'react-confetti'
+import useWindowSize from '../hoooks/useWindowSize'
 
 const customStyles = {
     content: {
@@ -33,12 +35,13 @@ const isLetter = str => str.length === 1 && str.match(/[a-z]/i);
 const notEnoughLetters = () => toast("Not Enough Letters");
 const notInWordList = () => toast("Not In Word List");
 
-const defaultState = { word: "", letters: "", colors: "", used: Array(26).fill('f'), win: 0 }
+const defaultState = { word: "", letters: "", colors: "", used: Array(26).fill('f'), shake: false, win: 0 }
 
 function Game(props) {
 
     const [modalIsOpen, setIsOpen] = useState(false)
     const [state, setState] = useState(defaultState)
+    const size = useWindowSize()
 
     function closeModal() {
         setIsOpen(false);
@@ -54,8 +57,6 @@ function Game(props) {
     }, [setState, setIsOpen, props.setWord]);
 
     const typeLetter = useCallback((letter) => {
-        console.log("type letter called")
-        console.log(letter)
         if (state.win > 0) {
             return;
         }
@@ -91,6 +92,7 @@ function Game(props) {
         else if (state.word.length === props.length) {
             if (!WORDS_TA.includes(state.word) && !WORDS_LA.includes(state.word)) {
                 notInWordList()
+                setState({ ...state, shake: true })
             } else {
                 let NewColors = state.colors + ('t').repeat(props.length)
                 let abc = Array(26).fill(0)
@@ -148,6 +150,7 @@ function Game(props) {
             }
         } else {
             notEnoughLetters()
+            setState({ ...state, shake: true })
         }
     }, [state, props]);
 
@@ -160,6 +163,14 @@ function Game(props) {
             enter()
         }
     }, [enter, typeLetter, remove]);
+
+    useEffect(() => {
+        if (state.win === 2) {
+            props.setWins(props.wins + 1)
+        } else if (state.win === 1) {
+            props.setWins(0)
+        }
+    }, [state.win])
 
     useEventListener('keydown', listener)
 
@@ -180,8 +191,11 @@ function Game(props) {
             {Array.from({ length: props.trys }, (x, row) =>
                 <div key={row} className="Row">
                     {Array.from({ length: props.length }, (x, col) =>
-                        <Box key={col} colorCode={row * (props.length) + col < state.colors.length ? state.colors[row * (props.length) + col] : "t"}
-                            value={row * (props.length) + col < state.letters.length ? state.letters[row * (props.length) + col] : " "} />)}
+                        <Box key={col}
+                            shake={state.shake && (state.colors.length <= (row * (props.length) + col) && (row * (props.length) + col) < state.colors.length + props.length)}
+                            turnOffShake={() => setState({ ...state, shake: false })}
+                            colorCode={row * (props.length) + col < state.colors.length ? state.colors[row * (props.length) + col] : "t"}
+                            value={row * (props.length) + col < state.letters.length ? state.letters[row * (props.length) + col] : ""} />)}
                 </div>)}
             <Keyboard enter={enter} used={state.used} remove={remove} typeLetter={typeLetter}></Keyboard>
             <Modal
@@ -193,8 +207,14 @@ function Game(props) {
                 <h2> {state.win === 2 ? "WIN!" : "LOSE"}</h2>
                 <p> Answer:</p>
                 <h4> {props.word.toUpperCase()}</h4>
+                <h5> {"WIN STREAK: " + props.wins}  </h5>
                 <button onClick={playAgain}> Play again</button>
+
             </Modal>
+            {state.win === 2 && <Confetti
+                width={size.width}
+                height={size.height}
+            />}
         </div>
 
     );
